@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import React, {useEffect} from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
@@ -22,6 +23,9 @@ export const Home = () => {
   return (
 	<div className="container mt-5">
 		<h1>contactos de {myUserSlug}</h1>
+    	<Link to="/add-contact">
+        <button className="btn btn-success">Agregar nuevo contacto</button>
+    	</Link>
 
 		<ul className="list-group">
 			{store.contacts.map((contact,index)=>(
@@ -30,7 +34,7 @@ export const Home = () => {
 				</li>
 			))}
 		</ul>
-		{store.contact.length === 0 && <p>no hay contactos en la agenda</p> }
+		{store.contacts.length === 0 && <p>no hay contactos en la agenda</p> }
 	</div>
   )
 };
