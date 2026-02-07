@@ -35,28 +35,55 @@ export default function storeReducer(store, action = {}) {
 
 // --- ACTIONS ---
 
+const AGENDAS_URL = "https://playground.4geeks.com/contact/agendas";
+const MY_USER = "carlos_avila"; 
+
 export const loadContacts = async (dispatch) => {
     try {
-        const response = await fetch(`https://playground.4geeks.com/contact/agendas/carlos_avila/contacts`);
-        if (!response.ok) throw new Error("No se pudo cargar la agenda");
-        const data = await response.json();
+        const response = await fetch(`${AGENDAS_URL}/${MY_USER}/contacts`);
         
+        // Si el usuario no existe (404), lo creamos
+        if (response.status === 404) {
+            await createAgenda();
+            return;
+        }
+
+        if (!response.ok) throw new Error("No se pudo cargar la agenda");
+        
+        const data = await response.json();
         dispatch({ type: "load_contacts", payload: data.contacts });
+        
     } catch (error) {
-        console.error(error);
+        console.error("Error loading contacts:", error);
+    }
+}
+
+// Función auxiliar para crear la agenda si no existe
+const createAgenda = async () => {
+    try {
+        const response = await fetch(`${AGENDAS_URL}/${MY_USER}`, {
+            method: "POST"
+        });
+        if (response.ok) {
+            console.log("Agenda creada exitosamente");
+        }
+    } catch (error) {
+        console.error("Error creando agenda:", error);
     }
 }
 
 export const createContact = async (dispatch, newContact) => {
-  try {
-        const response = await fetch(`https://playground.4geeks.com/contact/agendas/carlos_avila/contacts`, {
+    try {
+        const response = await fetch(`${AGENDAS_URL}/${MY_USER}/contacts`, {
             method: "POST",
             body: JSON.stringify(newContact),
             headers: { "Content-Type": "application/json" }
         });
+        
         if (!response.ok) throw new Error("No se pudo crear el contacto");
         
         const data = await response.json();
+        // La API devuelve el contacto creado completo (con ID)
         dispatch({ type: "add_contact", payload: data });
         return true; 
     } catch (error) {
@@ -67,7 +94,7 @@ export const createContact = async (dispatch, newContact) => {
 
 export const deleteContact = async (dispatch, id) => {
     try {
-        const response = await fetch(`https://playground.4geeks.com/contact/agendas/carlos_avila/contacts/${id}`, {
+        const response = await fetch(`${AGENDAS_URL}/${MY_USER}/contacts/${id}`, {
             method: "DELETE"
         });
         if (!response.ok) throw new Error("No se pudo eliminar el contacto");
@@ -80,7 +107,7 @@ export const deleteContact = async (dispatch, id) => {
 
 export const updateContact = async (dispatch, id, contactData) => {
     try {
-        const response = await fetch(`https://playground.4geeks.com/contact/agendas/carlos_avila/contacts/${id}`, {
+        const response = await fetch(`${AGENDAS_URL}/${MY_USER}/contacts/${id}`, {
             method: "PUT",
             body: JSON.stringify(contactData),
             headers: { "Content-Type": "application/json" }
