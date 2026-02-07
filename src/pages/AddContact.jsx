@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import useGlobalReducer from "../hooks/useGlobalReducer"; // Importamos el hook global
-import { createContact, updateContact } from "../store"; // Importamos las acciones
+import { useNavigate, useParams } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer"; 
+import { createContact, updateContact, loadContacts } from "../store"; // Asegúrate de exportar loadContacts en store.js
+import ContactForm from "../components/ContactForm"; // Importamos el componente visual
 
 export const AddContact = () => {
     const navigate = useNavigate();
-    const { id } = useParams(); // Obtenemos el ID de la URL si existe
-    const { store, dispatch } = useGlobalReducer(); // Necesitamos el dispatch
+    const { id } = useParams(); 
+    const { store, dispatch } = useGlobalReducer();
 
+    // Estado local solo para el formulario
     const [contact, setContact] = useState({
         name: "",
         email: "",
@@ -15,10 +17,19 @@ export const AddContact = () => {
         address: ""
     });
 
-    // Si hay un ID, buscamos el contacto en el store para rellenar el formulario
+    // EFECTO 1: Cargar contactos si refresco la página y el store está vacío
+    useEffect(() => {
+        if (id && store.contacts.length === 0) {
+            loadContacts(dispatch);
+        }
+    }, [id, store.contacts.length, dispatch]);
+
+    // EFECTO 2: Rellenar el formulario cuando tengamos los datos
     useEffect(() => {
         if (id && store.contacts.length > 0) {
+            // Usamos parseInt(id) porque useParams devuelve string y a veces los IDs son números
             const currentContact = store.contacts.find(c => c.id == id);
+            
             if (currentContact) {
                 setContact({
                     name: currentContact.name,
@@ -37,10 +48,8 @@ export const AddContact = () => {
     const handleSave = async () => {
         let success = false;
         if (id) {
-            // Si hay ID, actualizamos
             success = await updateContact(dispatch, id, contact);
         } else {
-            // Si no, creamos
             success = await createContact(dispatch, contact);
         }
         
@@ -51,52 +60,14 @@ export const AddContact = () => {
         }
     };
 
+    // Renderizado limpio: Delegamos la visualización al componente ContactForm
     return (
-        <div className="container mt-5">
-            <h1 className="text-center">{id ? "Editar Contacto" : "Agregar Nuevo Contacto"}</h1>
-            
-            <form className="container">
-                <div className="mb-3">
-                    <label className="form-label">Nombre Completo</label>
-                    <input 
-                        type="text" className="form-control" 
-                        name="name" placeholder="Full Name" 
-                        onChange={handleChange} value={contact.name} 
-                    />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Email</label>
-                    <input 
-                        type="email" className="form-control" 
-                        name="email" placeholder="Enter email" 
-                        onChange={handleChange} value={contact.email} 
-                    />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Teléfono</label>
-                    <input 
-                        type="text" className="form-control" 
-                        name="phone" placeholder="Enter phone" 
-                        onChange={handleChange} value={contact.phone} 
-                    />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Dirección</label>
-                    <input 
-                        type="text" className="form-control" 
-                        name="address" placeholder="Enter address" 
-                        onChange={handleChange} value={contact.address} 
-                    />
-                </div>
-                
-                <button type="button" className="btn btn-primary w-100" onClick={handleSave}>
-                    Guardar
-                </button>
-            </form>
-
-            <div className="mt-3">
-                <Link to="/">o volver a la lista</Link>
-            </div>
-        </div>
+        <ContactForm 
+            contact={contact}
+            handleChange={handleChange}
+            handleSubmit={handleSave}
+            title={id ? "Editar Contacto" : "Agregar Nuevo Contacto"}
+            buttonLabel={id ? "Actualizar" : "Guardar"}
+        />
     );
 };
