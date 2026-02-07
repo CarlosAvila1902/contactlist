@@ -1,11 +1,13 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Importamos useNavigate
-import { createContact } from "../store"; // Importamos la acción nueva
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer"; // Importamos el hook global
+import { createContact, updateContact } from "../store"; // Importamos las acciones
 
 export const AddContact = () => {
-    const navigate = useNavigate(); // Esto sirve para cambiar de página programáticamente
-    
-    // Corregí 'addres' y cambié 'full_name' por 'name' para la API
+    const navigate = useNavigate();
+    const { id } = useParams(); // Obtenemos el ID de la URL si existe
+    const { store, dispatch } = useGlobalReducer(); // Necesitamos el dispatch
+
     const [contact, setContact] = useState({
         name: "",
         email: "",
@@ -13,18 +15,36 @@ export const AddContact = () => {
         address: ""
     });
 
+    // Si hay un ID, buscamos el contacto en el store para rellenar el formulario
+    useEffect(() => {
+        if (id && store.contacts.length > 0) {
+            const currentContact = store.contacts.find(c => c.id == id);
+            if (currentContact) {
+                setContact({
+                    name: currentContact.name,
+                    email: currentContact.email,
+                    phone: currentContact.phone,
+                    address: currentContact.address
+                });
+            }
+        }
+    }, [id, store.contacts]);
+
     const handleChange = (e) => {
         setContact({ ...contact, [e.target.name]: e.target.value });
     };
 
     const handleSave = async () => {
-        console.log("Enviando:", contact);
-        
-        // Llamamos a la función del store
-        const success = await createContact(contact);
+        let success = false;
+        if (id) {
+            // Si hay ID, actualizamos
+            success = await updateContact(dispatch, id, contact);
+        } else {
+            // Si no, creamos
+            success = await createContact(dispatch, contact);
+        }
         
         if (success) {
-            // Si se guardó bien, volvemos a la lista (Home)
             navigate("/");
         } else {
             alert("Error al guardar. Revisa la consola.");
@@ -33,12 +53,11 @@ export const AddContact = () => {
 
     return (
         <div className="container mt-5">
-            <h1 className="text-center">Agregar nuevo contacto</h1>
+            <h1 className="text-center">{id ? "Editar Contacto" : "Agregar Nuevo Contacto"}</h1>
             
             <form className="container">
                 <div className="mb-3">
                     <label className="form-label">Nombre Completo</label>
-                    {/* Cambié el name="full_name" por name="name" */}
                     <input 
                         type="text" className="form-control" 
                         name="name" placeholder="Full Name" 
@@ -63,7 +82,6 @@ export const AddContact = () => {
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Dirección</label>
-                    {/* Asegúrate que el name sea "address" */}
                     <input 
                         type="text" className="form-control" 
                         name="address" placeholder="Enter address" 
